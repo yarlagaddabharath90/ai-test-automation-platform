@@ -126,3 +126,10 @@ src/main/java/com/example/testgen/
 - Generated tests are a strong first draft — review them (security/contract especially).
 - Module dependency versions in the catalog are sensible defaults; bump as needed
   (e.g. the Gatling Gradle plugin version).
+## Test Results
+
+<img width="1975" height="194"  src="https://github.com/user-attachments/assets/f99d45f6-8f53-47ce-a8f1-97cdbb5f13fe" />
+<img width="2209" height="455" src="https://github.com/user-attachments/assets/35ec7a96-eb7b-4881-aca2-53258fd5101b" />
+<img width="657" height="186"  src="https://github.com/user-attachments/assets/468a66db-a64f-4214-919a-4bc7e5710402" />
+<img width="2424" height="1197" src="https://github.com/user-attachments/assets/03007857-1f18-409d-8014-9b96e53daac0" />
+<img width="1040" height="725"  src="https://github.com/user-attachments/assets/8bbc6737-eae2-4ac7-abe1-be2b588ed29a" />
