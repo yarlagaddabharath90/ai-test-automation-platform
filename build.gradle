@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+}
+
+group = 'com.example'
+version = '0.1.0'
+description = 'AI Test Automation Platform — generates tests from an OpenAPI spec'
+
+java {
+    toolchain {
+        // Java 25 = current LTS. Spring Boot 4 supports 17+ and is tested through 26.
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Web API to upload specs and trigger generation
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // OpenAPI spec parsing
+    implementation 'io.swagger.parser.v3:swagger-parser:2.1.25'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// Convenience task so CI / the GitHub Action can run generation headless:
+//   ./gradlew generate -Pspec=path/to/openapi.yaml -Ptypes=unit,integration,security -Pout=build/generated
+tasks.register('generate', JavaExec) {
+    group = 'application'
+    description = 'Generate tests from an OpenAPI spec (headless, used by CI)'
+    classpath = sourceSets.main.runtimeClasspath
+    // Boot the Spring context (so the runner gets its dependencies injected) but
+    // with no web server, so the process exits once generation finishes.
+    mainClass = 'com.example.testgen.TestGenApplication'
+    args '--spring.main.web-application-type=none'
+    if (project.hasProperty('spec'))     { args '--spec',     project.property('spec') }
+    if (project.hasProperty('types'))    { args '--types',    project.property('types') }
+    if (project.hasProperty('provider')) { args '--provider', project.property('provider') }
+    if (project.hasProperty('out'))      { args '--out',      project.property('out') }
+    // Pass provider API keys through from the environment
+    environment 'ANTHROPIC_API_KEY', System.getenv('ANTHROPIC_API_KEY') ?: ''
+    environment 'GEMINI_API_KEY', System.getenv('GEMINI_API_KEY') ?: ''
+}

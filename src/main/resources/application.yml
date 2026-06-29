@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: ai-test-automation-platform
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+server:
+  port: 8080
+
+testgen:
+  # Used when a request doesn't specify a provider.
+  default-provider: claude
+  output-dir: generated
+  providers:
+    claude:
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: https://api.anthropic.com/v1/messages
+      model: claude-sonnet-4-6
+      max-tokens: 8000
+      anthropic-version: "2023-06-01"
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      base-url: https://generativelanguage.googleapis.com/v1beta
+      model: gemini-2.5-flash      # gemini-3.5-flash also available
+      max-tokens: 8000
