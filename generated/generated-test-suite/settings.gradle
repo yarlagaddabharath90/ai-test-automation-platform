@@ -1,0 +1,4 @@
+rootProject.name = 'generated-test-suite'
+
+include 'unit-tests'
+include 'integration-tests'

@@ -1,0 +1,83 @@
+name: Generate Tests (on demand)
+
+# Three ways to trigger:
+#  1. Manually from the Actions tab ("Run workflow") with custom inputs  -> on demand
+#  2. Via the GitHub API / CLI (`gh workflow run`)                        -> on demand
+#  3. (Optional) on a schedule — uncomment the `schedule` block below
+on:
+  workflow_dispatch:
+    inputs:
+      spec_path:
+        description: "Path to the OpenAPI spec in the repo"
+        required: true
+        default: "specs/openapi.yaml"
+      types:
+        description: "Comma-separated test types (or 'all')"
+        required: true
+        default: "unit,integration,contract,load,gatling,security,mock,coverage"
+      model:
+        description: "LLM model to use"
+        required: false
+        default: "claude-sonnet-4-6"
+  # schedule:
+  #   - cron: "0 6 * * 1"   # every Monday 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.1"
+
+      - name: Normalise inputs
+        id: vars
+        run: |
+          TYPES="${{ github.event.inputs.types }}"
+          if [ "$TYPES" = "all" ]; then
+            TYPES="unit,integration,contract,load,gatling,security,mock,coverage"
+          fi
+          echo "types=$TYPES" >> "$GITHUB_OUTPUT"
+
+      - name: Generate tests from OpenAPI spec
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ./gradlew generate \
+            -Pspec="${{ github.event.inputs.spec_path }}" \
+            -Ptypes="${{ steps.vars.outputs.types }}" \
+            -Pout="build/generated" \
+            -Dtestgen.llm.model="${{ github.event.inputs.model }}"
+
+      - name: Run the generated tests + coverage
+        if: contains(steps.vars.outputs.types, 'coverage') || contains(steps.vars.outputs.types, 'unit') || contains(steps.vars.outputs.types, 'integration')
+        continue-on-error: true   # generated tests may need wiring before they pass
+        run: ./gradlew test jacocoTestReport
+
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-tests
+          path: build/generated/**
+          if-no-files-found: error
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/reports/jacoco/test/**
+          if-no-files-found: ignore

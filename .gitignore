@@ -6,4 +6,3 @@ build/
 *.iml
 .vscode/
 .env
-generated/

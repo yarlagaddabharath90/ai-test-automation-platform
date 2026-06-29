@@ -1,0 +1,18 @@
+// Root build for the generated test suite.
+// Per-module config lives in each submodule's build.gradle.
+plugins { id 'base' }
+
+allprojects {
+    repositories { mavenCentral() }
+}
+
+// Auto-apply JaCoCo to every Java module and produce a report after tests.
+subprojects {
+    plugins.withId('java') {
+        apply plugin: 'jacoco'
+        tasks.withType(Test).configureEach { finalizedBy(tasks.named('jacocoTestReport')) }
+        tasks.withType(JacocoReport).configureEach {
+            reports { xml.required = true; html.required = true }
+        }
+    }
+}
